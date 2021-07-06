@@ -33,8 +33,12 @@ public:
     float GetProbability(std::vector<int>);                                 //評価を行う関数
 
 private:
-    std::vector<Urn> urn;
-    std::vector<int> learn_pattern;
+    std::vector<Urn> urn;                       //ツボとボール
+    std::vector<std::vector<int>> ball_count;   //出てきたボールの種類をツボごとに分けて格納
+    std::vector<int> learn_pattern;             //学習するパターンを格納
+    std::vector<std::vector<double>> prob_buff; //トレリスの各マスの確率を格納
+    std::vector<std::vector<bool>> trans_buff;  //遷移方向を格納
+    //std::vector<std::vector<int>> times_event; //ボールの出た回数や遷移した回数を保存
     int urn_num;  //ツボの数
     int ball_num; //ボールの種類
     int calc_max; //演算回数

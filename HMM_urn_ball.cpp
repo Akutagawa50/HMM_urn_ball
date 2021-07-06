@@ -92,14 +92,68 @@ float HMM_urn_ball::GetProbability(std::vector<int> pattern)
         *std::min_element(pattern.begin(), pattern.end()) < 0)
         return -1.0;
 
-    // 7/5 評価のアルゴリズムを考える
-    for (int i = 0; i < pattern.size(); i++)
+    /*------------------イメージ--------------------//
+                     /
+    J   /-----------/
+       / / / / / / /
+      / / / / / / /
+     / / / / / / /
+    /-----------/
+                T
+   /---------------------------------------------- */
+
+    //トレリスを生成（縦 pattern-(urn-1)=y 横 urn=x）
+    int T = pattern.size() - urn_num - 1;
+
+    //各マスの確率を格納する配列を動的確保
+    prob_buff.assign(T, std::vector<double>(urn_num, 0.0));
+
+    //各マスがどこから遷移したかを格納, 自己ループ：true, 遷移：false
+    trans_buff.assign(T, std::vector<bool>(urn_num, false));
+
+    //出てきたボールの数を格納
+    ball_count.assign(urn_num, std::vector<int>(ball_num, 0));
+
+    for (int t = 0; t < T; t++)
     {
-        //トレリス　縦 pattern-(urn-1)=y 横 urn=x
-        //通り方の総数　(x+y-2)! / {(x-1)!(y-1)!}
-        for (int j = 0; j < ball_num; j++)
+        //Viterbiアルゴリズムを使う
+        for (int j = 0; j < urn_num; j++)
         {
-            /* code */
+            if (t == 0 && j == 0)
+            { //0番目のツボからpattern[0]番のボールが出る確率を代入
+                prob_buff[0][0] = urn[0].ball[pattern[0]];
+            }
+            else if (t == 0)
+            {
+                prob_buff[0][j] *= prob_buff[0][j - 1];
+                //遷移なのでfalse
+                //trans_buff[t][j] = false;
+            }
+            else if (j = 0)
+            {
+                prob_buff[t][0] *= prob_buff[t - 1][0];
+                //自己ループなのでtrue
+                trans_buff[t][j] = true;
+            }
+            else
+            {
+                //それぞれの方向から来た時の確率を計算
+                //自己ループの場合
+                double p1 = prob_buff[t - 1][j] * urn[j].ball[pattern[t + j]];
+                //遷移の場合
+                double p2 = prob_buff[t][j - 1] * urn[j].ball[pattern[t + j]];
+
+                if (p1 > p2)
+                {
+                    prob_buff[t][j] = p1;
+                    trans_buff[t][j] = true;
+                }
+                else
+                {
+                    prob_buff[t][j] = p2;
+                    //trans_buff[t][j]=false;
+                }
+            }
         }
     }
 }
