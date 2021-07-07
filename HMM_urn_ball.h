@@ -1,6 +1,18 @@
 #ifndef HMM_URN_BALL
 #define HMM_URN_BALL
 
+//--------debug----------//
+#define _DEBUG_
+
+#ifdef _DEBUG_
+
+#include <iostream>
+#define DEBUG std::cout <<
+#define ENDL << std::endl;
+
+#endif //DEBUG
+//--------debug----------//
+
 #include <algorithm>
 #include <vector>
 
@@ -35,6 +47,7 @@ public:
 private:
     std::vector<Urn> urn;                       //ツボとボール
     std::vector<std::vector<int>> ball_count;   //出てきたボールの種類をツボごとに分けて格納
+    std::vector<std::vector<int>> trans_count;  //遷移回数をカウント
     std::vector<int> learn_pattern;             //学習するパターンを格納
     std::vector<std::vector<double>> prob_buff; //トレリスの各マスの確率を格納
     std::vector<std::vector<bool>> trans_buff;  //遷移方向を格納
