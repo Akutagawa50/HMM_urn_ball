@@ -8,7 +8,7 @@
 
 #include <iostream>
 #define DEBUG std::cout <<
-#define ENDL << std::endl;
+#define ENDL << std::endl
 
 #endif //DEBUG
 //--------debug----------//

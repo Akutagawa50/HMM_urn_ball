@@ -3,7 +3,7 @@
 #include "HMM_urn_ball.h"
 
 const int urn_num = 4;
-const int ball_num = 7;
+const int ball_num = 8;
 HMM_urn_ball hmm(urn_num, ball_num);
 
 int main()
@@ -19,7 +19,7 @@ int main()
         std::cout << std::endl;
     }
     */
-    std::vector<int> pattern(urn_num + 2);
+    std::vector<int> pattern(urn_num + 3);
     std::random_device rnd;
     for (int i = 0; i < pattern.size(); i++)
     {
@@ -31,7 +31,7 @@ int main()
         std::cout << pattern[i] << ", ";
     }
     std::cout << std::endl
-              << hmm.GetProbability(pattern) << std::endl;
+              << "prob is " << hmm.GetProbability(pattern) << std::endl;
 
     return 0;
 }

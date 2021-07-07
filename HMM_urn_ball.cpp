@@ -105,7 +105,7 @@ float HMM_urn_ball::GetProbability(std::vector<int> pattern)
    /---------------------------------------------- */
 
     //トレリスを生成（縦 pattern-(urn-1)=y 横 urn=x）
-    int T = pattern.size() - urn_num - 1;
+    int T = pattern.size() - urn_num + 1;
     int J = urn_num;
 
     //各マスの確率を格納する配列を動的確保
@@ -121,45 +121,37 @@ float HMM_urn_ball::GetProbability(std::vector<int> pattern)
     //遷移trans_count[j][0],自己ループtrans_count[j][1]
     trans_count.assign(J, std::vector<int>(2, 0));
 
+    DEBUG "T=" << T << ", J=" << J ENDL;
+
+    //Viterbiアルゴリズムで終端までの確率を求める
     for (int t = 0; t < T; t++)
     {
-
-        //Viterbiアルゴリズムで終端までの確率を求める
         for (int j = 0; j < J; j++)
         {
             if (t == 0 && j == 0)
             { //0番目のツボからpattern[0]番のボールが出る確率を代入
-                DEBUG "debug 00" ENDL;
                 prob_buff[0][0] = urn[0].ball[pattern[0]];
             }
             else if (t == 0)
             {
-                DEBUG "debug 0j" ENDL;
-                prob_buff[0][j] *= prob_buff[0][j - 1] * urn[j].ball[pattern[t + j]];
+                prob_buff[0][j] = prob_buff[0][j - 1] * urn[j - 1].trans * urn[j].ball[pattern[j]];
                 //遷移なのでfalse
                 //trans_buff[t][j] = false;
-                DEBUG "debug 0j end" ENDL;
             }
-            else if (j = 0)
+            else if (j == 0)
             {
-
-                DEBUG "debug t0" ENDL;
-                // 7/7 コアダンプ j=4のとき
-                prob_buff[t][0] *= prob_buff[t - 1][0] * urn[j].ball[pattern[t + j]];
+                prob_buff[t][0] = prob_buff[t - 1][0] * urn[0].loop * urn[0].ball[pattern[t]];
                 //自己ループなのでtrue
-                trans_buff[t][j] = true;
-                DEBUG "debug t0 end" ENDL;
+                trans_buff[t][0] = true;
             }
             else
             {
 
-                DEBUG "debug tj" ENDL;
-
                 //それぞれの方向から来た時の確率を計算
                 //自己ループの場合
-                double p1 = prob_buff[t - 1][j] * urn[j].ball[pattern[t + j]];
+                double p1 = prob_buff[t - 1][j] * urn[j].loop * urn[j].ball[pattern[t + j]];
                 //遷移の場合
-                double p2 = prob_buff[t][j - 1] * urn[j].ball[pattern[t + j]];
+                double p2 = prob_buff[t][j - 1] * urn[j - 1].trans * urn[j].ball[pattern[t + j]];
 
                 if (p1 > p2)
                 { //自己ループ
@@ -174,25 +166,26 @@ float HMM_urn_ball::GetProbability(std::vector<int> pattern)
             }
         }
     }
-    //最終的な確率を計算
-    double prob = prob_buff[T - 1][J - 1] * urn[J - 1].trans;
 
-    //出てきたボールの数と遷移回数を計算
+    //最終的な確率を計算
     //配列の要素の関係でTとJを１減らす
     T--;
     J--;
-    for (int i = pattern.size() - 1; i >= 0; i--)
+    double prob = prob_buff[T][J] * urn[J].trans;
+
+    //出てきたボールの数と遷移回数を計算
+    for (int i = pattern.size() - 1; i > 0; i--)
     {
         ball_count[J][pattern[i]]++;
         if (trans_buff[T][J])
         { //自己ループだったらTを減らす
-            T--;
             trans_count[J][1]++;
+            T--;
         }
         else
         { //遷移していたらJを減らす
-            J--;
             trans_count[J][0]++;
+            J--;
         }
     }
     return prob;
