@@ -7,7 +7,8 @@ Urn::Urn()
     ball_kind = 2;                           //ballの種類を設定
     ball.assign(ball_kind, 1.0 / ball_kind); //ball_numだけボールを用意して等確率にする
     loop = 0.5;
-    trans = 0.5;
+    //loop = (double)(rand() % 100) / 100.0;
+    trans = 1.0 - loop;
 }
 
 //ツボのデストラクタ
@@ -32,6 +33,7 @@ HMM_urn_ball::HMM_urn_ball(int urn_n, int ball_n) : urn(urn_n)
     for (int i = 0; i < urn_num; i++)
         urn[i].SetBallKind(ball_num);
 }
+
 //HMMのデストラクタ
 HMM_urn_ball::~HMM_urn_ball() {}
 
@@ -62,28 +64,72 @@ int HMM_urn_ball::GetBallNum()
 }
 
 //学習させるパターンを設定する関数
-bool HMM_urn_ball::SetLearnPattern(std::vector<int> pattern, int cl_max, double err = 0.00001)
+bool HMM_urn_ball::HMMLearning(std::vector<int> pattern, int calc_max, double error)
 {
+    double prob = 0.0;     //計算結果を格納
+    double pre_prob = 1.0; //前の計算結果を格納
 
-    error = err;       //誤差を更新
-    calc_max = cl_max; //計算回数を更新
+    learn_pattern = pattern; //パターンを保存
 
-    //patternの数値の範囲が 0 ~ ball_num であるかを確認
-    if (*std::max_element(pattern.begin(), pattern.end()) >= ball_num ||
-        *std::min_element(pattern.begin(), pattern.end()) < 0)
+    prob = HMMMeasure(learn_pattern);
+
+    //patternが条件に合わなかったらエラーを返す
+    if (prob == -1.0)
         return false;
 
-    learn_pattern = pattern;
+    for (int i = 0; i < calc_max; i++)
+    {
+        //パラメータ更新
+        for (int j = 0; j < urn_num; j++)
+        {
 
+            //j番目のツボのボールの個数を合計
+            int ball_sum = std::accumulate(ball_count[j].begin(), ball_count[j].end(), 0.0);
+
+            //j番目のツボ遷移回数を合計
+            int trans_sum = trans_count[j][0] + trans_count[j][1];
+
+            //各ボールが出る確率を計算
+            for (int b = 0; b < ball_num; b++)
+            {
+                //DEBUG urn[j].ball[b] - (double)ball_count[j][b] / ball_sum ENDL;
+                urn[j].ball[b] = (double)ball_count[j][b] / ball_sum;
+            }
+            //遷移の確率を更新
+            urn[j].trans = (double)trans_count[j][0] / trans_sum;
+
+            //自己ループの確率を更新
+            urn[j].loop = (double)trans_count[j][1] / trans_sum;
+        }
+
+        //評価
+        pre_prob = prob;
+        prob = HMMMeasure(learn_pattern);
+
+        //収束判定
+        double def_prob;
+        def_prob = prob - pre_prob;
+
+        if (def_prob < error && def_prob > -error)
+        {
+            return true;
+        }
+    }
     return true;
 }
 
-bool HMM_urn_ball::StartLearning()
+double HMM_urn_ball::HMMMeasure(std::vector<int> pattern)
 {
-}
+    urn[0].ball[0] = 0.5;
+    urn[0].ball[1] = 0.5;
+    urn[0].trans = 0.5;
+    urn[0].loop = 0.5;
 
-float HMM_urn_ball::GetProbability(std::vector<int> pattern)
-{
+    urn[1].ball[0] = 0.0;
+    urn[1].ball[1] = 1.0;
+    urn[1].trans = 0.5;
+    urn[1].loop = 0.5;
+
     //patternの数値の範囲が 0 ~ ball_num であるかを確認
     if (*std::max_element(pattern.begin(), pattern.end()) >= ball_num ||
         *std::min_element(pattern.begin(), pattern.end()) < 0)
@@ -121,8 +167,6 @@ float HMM_urn_ball::GetProbability(std::vector<int> pattern)
     //遷移trans_count[j][0],自己ループtrans_count[j][1]
     trans_count.assign(J, std::vector<int>(2, 0));
 
-    DEBUG "T=" << T << ", J=" << J ENDL;
-
     //Viterbiアルゴリズムで終端までの確率を求める
     for (int t = 0; t < T; t++)
     {
@@ -153,8 +197,8 @@ float HMM_urn_ball::GetProbability(std::vector<int> pattern)
                 //遷移の場合
                 double p2 = prob_buff[t][j - 1] * urn[j - 1].trans * urn[j].ball[pattern[t + j]];
 
-                if (p1 > p2)
-                { //自己ループ
+                if (p1 > p2) //自己ループ優先
+                {            //自己ループ
                     prob_buff[t][j] = p1;
                     trans_buff[t][j] = true;
                 }
