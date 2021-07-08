@@ -20,13 +20,13 @@ int main()
     std::cout << std::endl;
 
     std::cout << "p=" << hmm.HMMMeasure(pattern) << std::endl;
-    /*
-    if (hmm.HMMLearning(pattern))
+    
+    if (hmm.HMMLearning(pattern,2))
         std::cout << std::endl
                   << "prob is " << hmm.HMMMeasure(pattern) << std::endl;
     else
         std::cout << "error" << std::endl;
-    */
+    
     std::vector<std::vector<double>> ball = hmm.GetBallMatrix();
     for (int i = 0; i < hmm.GetUrnNum(); i++)
     {

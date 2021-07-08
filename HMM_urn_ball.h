@@ -7,7 +7,7 @@
 #ifdef _DEBUG_
 
 #include <iostream>
-#define DEBUG std::cout <<
+#define DEBUG std::cout << "DEBUG " <<
 #define ENDL << std::endl
 
 #endif //DEBUG
@@ -28,7 +28,7 @@ public:
 
     std::vector<double> ball; //各ボールが出る確率
     double loop;              //自己ループの確率
-    double trans;             //次のツボに遷移する確率
+    double trans;             //次の壺に遷移する確率
 
 private:
     int ball_kind;
@@ -40,24 +40,24 @@ public:
     HMM_urn_ball(int urn_n, int ball_n);
     ~HMM_urn_ball();
     std::vector<std::vector<double>> GetBallMatrix();
-    int GetUrnNum();                                                                       //ツボの数を返す
+    int GetUrnNum();                                                                       //壺の数を返す
     int GetBallNum();                                                                      //ボールの種類を返す
     bool HMMLearning(std::vector<int> pattern, int cl_max = 100, double err = 0.00000001); //学習する関数
     double HMMMeasure(std::vector<int>);                                                   //評価を行う関数
 
 private:
-    int factorial(int x);                                  //xの階乗を返す関数
-    std::vector<Urn> urn;                                  //ツボとボール
-    std::vector<std::vector<std::vector<int>>> ball_count; //出てきたボールの種類をツボごとに分けて格納
-    std::vector<std::vector<int>> trans_count;             //いらない　遷移回数をカウント 遷移trans_count[j][0] 自己ループtrans_count[j][1]
-    //std::vector<int> learn_pattern;                        //学習するパターンを格納
-    std::vector<double> prob_buff;                         //いらない　トレリスの各マスの確率を格納
-    std::vector<std::vector<bool>> trans_buff;             //いらない　遷移方向を格納
-    std::vector<int> trans_path;                           //遷移方向を格納
+    int factorial(int x);                                   //xの階乗を返す関数
+    std::vector<Urn> urn;                                   //壺とボール
+    std::vector<std::vector<std::vector<int>>> ball_count;  //出てきたボールの種類を壺ごとに分けて格納
+    std::vector<std::vector<std::vector<int>>> trans_count; //遷移回数を保存
+    std::vector<int> trans_buff;                            //遷移方向を格納
+    std::vector<double> prob_buff;                          //各パスの確率を格納する
+    std::vector<int> learn_pattern;                         //学習するパターンを格納
 
     //std::vector<std::vector<int>> times_event; //ボールの出た回数や遷移した回数を保存
-    int urn_num;  //ツボの数
+    int urn_num;  //壺の数
     int ball_num; //ボールの種類
+    int path_num; //パスの総数
     double prob_sum;
 };
 

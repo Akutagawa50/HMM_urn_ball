@@ -1,7 +1,7 @@
 #include "HMM_urn_ball.h"
 
 /*---------------Urn----------------*/
-//ツボのコンストラクタ
+//壺のコンストラクタ
 Urn::Urn()
 {
     ball_kind = 2;                           //ballの種類を設定
@@ -11,10 +11,10 @@ Urn::Urn()
     trans = 1.0 - loop;
 }
 
-//ツボのデストラクタ
+//壺のデストラクタ
 Urn::~Urn() {}
 
-//ツボの中のボールを設定する関数
+//壺の中のボールを設定する関数
 bool Urn::SetBallKind(int kind) //ボールの種類を返す関数
 {
     if (kind <= 1)
@@ -51,7 +51,7 @@ std::vector<std::vector<double>> HMM_urn_ball::GetBallMatrix()
     return ball_matrix;
 }
 
-//ツボの数を返す関数
+//壺の数を返す関数
 int HMM_urn_ball::GetUrnNum()
 {
     return urn_num;
@@ -62,7 +62,7 @@ int HMM_urn_ball::GetBallNum()
 {
     return ball_num;
 }
-/*
+
 //学習させるパターンを設定する関数
 bool HMM_urn_ball::HMMLearning(std::vector<int> pattern, int calc_max, double error)
 {
@@ -77,29 +77,82 @@ bool HMM_urn_ball::HMMLearning(std::vector<int> pattern, int calc_max, double er
     if (prob == -1.0)
         return false;
 
-    for (int i = 0; i < calc_max; i++)
+    //パラメータ更新
+    //各パスのボールが出る確立を格納
+    std::vector<std::vector<std::vector<double>>> ball_prob =
+        std::vector<std::vector<std::vector<double>>>(path_num, std::vector<std::vector<double>>(urn_num, std::vector<double>(ball_num, 0)));
+
+    //各パスの遷移確率を格納
+    std::vector<std::vector<std::vector<double>>> trans_prob =
+        std::vector<std::vector<std::vector<double>>>(path_num, std::vector<std::vector<double>>(urn_num, std::vector<double>(2, 0)));
+
+    for (int calc = 0; calc < calc_max; calc++)
     {
-        //パラメータ更新
+        for (int path = 0; path < path_num; path++)
+        {
+            //壺ごとのパラメータを更新
+            for (int j = 0; j < urn_num; j++)
+            {
+                //ボールのでる確率を計算
+                int ball_sum = std::accumulate(ball_count[path][j].begin(), ball_count[path][j].end(), 0.0);
+                for (int b = 0; b < ball_num; b++)
+                {
+                    ball_prob[path][j][b] = (double)ball_count[path][j][b] / ball_sum;
+                }
+
+                //遷移確率を計算
+                int trans_sum = trans_count[path][j][0] + trans_count[path][j][0];
+                trans_prob[path][j][0] = trans_count[path][j][0] / trans_sum;
+                trans_prob[path][j][1] = trans_count[path][j][1] / trans_sum;
+            }
+        }
+
+        //壺ごとのパラメータを統合
         for (int j = 0; j < urn_num; j++)
         {
-
-            //j番目のツボのボールの個数を合計
-            int ball_sum = std::accumulate(ball_count[j].begin(), ball_count[j].end(), 0.0);
-
-            //j番目のツボ遷移回数を合計
-            int trans_sum = trans_count[j][0] + trans_count[j][1];
-
-            //各ボールが出る確率を計算
             for (int b = 0; b < ball_num; b++)
             {
-                //DEBUG urn[j].ball[b] - (double)ball_count[j][b] / ball_sum ENDL;
-                urn[j].ball[b] = (double)ball_count[j][b] / ball_sum;
-            }
-            //遷移の確率を更新
-            urn[j].trans = (double)trans_count[j][0] / trans_sum;
+                //最終的なボールが出る確率を格納
+                double ball_para = 0.0;
 
-            //自己ループの確率を更新
-            urn[j].loop = (double)trans_count[j][1] / trans_sum;
+                for (int path = 0; path < path_num; path++)
+                {
+                    ball_para += ball_prob[path][j][b] * prob_buff[path];
+                }
+                //ボールのパラメータを更新
+                urn[j].ball[b] = ball_para;
+            }
+
+            //最終的なループ確率を格納
+            double loop_para = 0.0;
+            //最終的な遷移確率を格納
+            double trans_para = 0.0;
+
+            for (int path = 0; path < path_num; path++)
+            { //遷移確率を計算
+
+                loop_para += trans_prob[path][j][0] * prob_buff[path];
+                trans_para += trans_prob[path][j][1] * prob_buff[path];
+            }
+            //パラメータを更新
+            urn[j].loop = loop_para;
+            urn[j].trans = trans_para;
+        }
+
+        //確率を正規化
+        for (int j = 0; j < urn_num; j++)
+        {
+            //ボールが出る確率を正規化
+            double ball_prob_sum = std::accumulate(urn[j].ball.begin(), urn[j].ball.end(), 0.0);
+            for (int b = 0; b < ball_num; b++)
+            {
+                urn[j].ball[b] /= ball_prob_sum;
+            }
+
+            //遷移確率を正規化
+            double trans_prob_sum = urn[j].loop + urn[j].trans;
+            urn[j].loop /= trans_prob_sum;
+            urn[j].trans /= trans_prob_sum;
         }
 
         //評価
@@ -107,9 +160,7 @@ bool HMM_urn_ball::HMMLearning(std::vector<int> pattern, int calc_max, double er
         prob = HMMMeasure(learn_pattern);
 
         //収束判定
-        double def_prob;
-        def_prob = prob - pre_prob;
-
+        double def_prob = prob - pre_prob;
         if (def_prob < error && def_prob > -error)
         {
             return true;
@@ -117,25 +168,15 @@ bool HMM_urn_ball::HMMLearning(std::vector<int> pattern, int calc_max, double er
     }
     return true;
 }
-*/
+
 double HMM_urn_ball::HMMMeasure(std::vector<int> pattern)
 {
-    urn[0].ball[0] = 0.5;
-    urn[0].ball[1] = 0.5;
-    urn[0].trans = 0.5;
-    urn[0].loop = 0.5;
-
-    urn[1].ball[0] = 0.0;
-    urn[1].ball[1] = 1.0;
-    urn[1].trans = 0.5;
-    urn[1].loop = 0.5;
-
     //patternの数値の範囲が 0 ~ ball_num であるかを確認
     if (*std::max_element(pattern.begin(), pattern.end()) >= ball_num ||
         *std::min_element(pattern.begin(), pattern.end()) < 0)
         return -1.0;
 
-    //パターンがツボより多いか確認
+    //パターンが壺より多いか確認
     if (pattern.size() < urn_num)
         return -1.0;
 
@@ -154,134 +195,74 @@ double HMM_urn_ball::HMMMeasure(std::vector<int> pattern)
     int T = pattern.size() - urn_num + 1;
     int J = urn_num;
 
-    //各マスがどこから遷移したかを格納, 自己ループ：true, 遷移：false
-    trans_buff.assign(T, std::vector<bool>(J, false));
-
-    //出てきたボールの数を格納
-    //ball_count.assign(J, std::vector<int>(ball_num, 0));
-
-    //遷移か自己ループした回数を格納
-    //遷移trans_count[j][0],自己ループtrans_count[j][1]
-    trans_count.assign(J, std::vector<int>(2, 0));
-
     //パスを生成
     //パスの総数を計算 (T+J-2)!/((T-1)!(J-1)!)
-    int path_num = factorial(T + J - 2) / (factorial(T - 1) * factorial(J - 1));
-    trans_path.assign(path_num, 0);
+    path_num = factorial(T + J - 2) / (factorial(T - 1) * factorial(J - 1));
+    trans_buff.assign(path_num, 0);
 
-    //各パスの確率を格納する配列を動的確保
+    //各パスの確率を格納する配列を動的確保 prob_buf[パスの総数]
     prob_buff.assign(path_num, 0.0);
 
+    //各壺での遷移回数とループ回数を保存
+    //prob_count[path_num][J][0] : 自己ループ
+    //prob_count[path_num][J][1] : 次の壺へ遷移
+    trans_count = std::vector<std::vector<std::vector<int>>>(path_num, std::vector<std::vector<int>>(urn_num, std::vector<int>(2, 0)));
+
+    //各パスで出てきたボールの数を格納 ball_count[パスの総数][壺の総数][ボールの種類]
+    ball_count = std::vector<std::vector<std::vector<int>>>(path_num, std::vector<std::vector<int>>(urn_num, std::vector<int>(ball_num, 0)));
+
     int path = 0;
+    int x = 1 << pattern.size(); //Endに遷移するので最上位は1
     //確率の合計を初期化
     prob_sum = 0;
-    for (int x = 0; path != (path_num - 1); x++)
+    while (path < path_num)
     {
         int count = 0;
 
         //(pattern.size - 1) bit 分見る
         for (int b = 0; b < pattern.size() - 1; b++)
         {
-            //b+1 bit目が1だったらcount++
+            //b+1 bit目が1だったらcount++(これを遷移とする)
             if (x & (1 << b))
+            {
                 count++;
+            }
         }
         if (count == J - 1)
-        { //xのbitの1の数が(J-1)になったらパスを保存してi++
-            trans_path[path] = x;
+        { //xのbitの1の数が(J-1)になったらパスを保存してpath++
+            trans_buff[path] = x;
 
             //見つけたパスの確率とボールの数を
             int t = 0;
             int j = 0;
             prob_buff[path] = urn[0].ball[pattern[0]];
-            for (int b = 0; pattern.size() - 1; b++)
+            for (int b = 1; b < pattern.size(); b++)
             {
-                if (x & (1 << b))
-                { //次のツボに遷移する場合
+                //遷移かループかを確認
+                if (x & (1 << (b - 1)))
+                { //次の壺に遷移する場合
+                    trans_count[path][j][1]++;
                     prob_buff[path] *= urn[j].trans * urn[++j].ball[pattern[b]];
                 }
                 else
                 { //自己ループの場合
+                    trans_count[path][j][0]++;
                     prob_buff[path] *= urn[j].loop * urn[j].ball[pattern[b]];
                 }
+                //ボールをカウント
+                ball_count[path][j][pattern[b]]++;
             }
-            prob_buff[path] *= urn[J].trans;
+            prob_buff[path] *= urn[J - 1].trans;
             prob_sum += prob_buff[path];
             path++;
         }
+        x++;
     }
-
-    /*
-    //Viterbiアルゴリズムで終端までの確率を求める
-    for (int t = 0; t < T; t++)
-    {
-        for (int j = 0; j < J; j++)
-        {
-            if (t == 0 && j == 0)
-            { //0番目のツボからpattern[0]番のボールが出る確率を代入
-                prob_buff[0][0] = urn[0].ball[pattern[0]];
-            }
-            else if (t == 0)
-            {
-                prob_buff[0][j] = prob_buff[0][j - 1] * urn[j - 1].trans * urn[j].ball[pattern[j]];
-                //遷移なのでfalse
-                //trans_buff[t][j] = false;
-            }
-            else if (j == 0)
-            {
-                prob_buff[t][0] = prob_buff[t - 1][0] * urn[0].loop * urn[0].ball[pattern[t]];
-                //自己ループなのでtrue
-                trans_buff[t][0] = true;
-            }
-            else
-            {
-
-                //それぞれの方向から来た時の確率を計算
-                //自己ループの場合
-                double p1 = prob_buff[t - 1][j] * urn[j].loop * urn[j].ball[pattern[t + j]];
-                //遷移の場合
-                double p2 = prob_buff[t][j - 1] * urn[j - 1].trans * urn[j].ball[pattern[t + j]];
-
-                if (p1 > p2) //自己ループ優先
-                {            //自己ループ
-                    prob_buff[t][j] = p1;
-                    trans_buff[t][j] = true;
-                }
-                else
-                { //遷移
-                    prob_buff[t][j] = p2;
-                    //trans_buff[t][j]=false;
-                }
-            }
-        }
-    }
-
-    //最終的な確率を計算
-    //配列の要素の関係でTとJを１減らす
-    T--;
-    J--;
-    double prob = prob_buff[T][J] * urn[J].trans;
-
-    //出てきたボールの数と遷移回数を計算
-    for (int i = pattern.size() - 1; i > 0; i--)
-    {
-        ball_count[J][pattern[i]]++;
-        if (trans_buff[T][J])
-        { //自己ループだったらTを減らす
-            trans_count[J][1]++;
-            T--;
-        }
-        else
-        { //遷移していたらJを減らす
-            trans_count[J][0]++;
-            J--;
-        }
-    }
-    */
     return prob_sum;
 }
 
+//xの階乗を返す関数
 int HMM_urn_ball::factorial(int x)
-{ //xの階乗を返す関数
+{
     return x <= 1 ? 1 : x * factorial(x - 1);
 }
