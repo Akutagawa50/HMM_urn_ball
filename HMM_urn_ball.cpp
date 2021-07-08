@@ -62,7 +62,7 @@ int HMM_urn_ball::GetBallNum()
 {
     return ball_num;
 }
-
+/*
 //学習させるパターンを設定する関数
 bool HMM_urn_ball::HMMLearning(std::vector<int> pattern, int calc_max, double error)
 {
@@ -117,7 +117,7 @@ bool HMM_urn_ball::HMMLearning(std::vector<int> pattern, int calc_max, double er
     }
     return true;
 }
-
+*/
 double HMM_urn_ball::HMMMeasure(std::vector<int> pattern)
 {
     urn[0].ball[0] = 0.5;
@@ -154,19 +154,64 @@ double HMM_urn_ball::HMMMeasure(std::vector<int> pattern)
     int T = pattern.size() - urn_num + 1;
     int J = urn_num;
 
-    //各マスの確率を格納する配列を動的確保
-    prob_buff.assign(T, std::vector<double>(J, 0.0));
-
     //各マスがどこから遷移したかを格納, 自己ループ：true, 遷移：false
     trans_buff.assign(T, std::vector<bool>(J, false));
 
     //出てきたボールの数を格納
-    ball_count.assign(J, std::vector<int>(ball_num, 0));
+    //ball_count.assign(J, std::vector<int>(ball_num, 0));
 
     //遷移か自己ループした回数を格納
     //遷移trans_count[j][0],自己ループtrans_count[j][1]
     trans_count.assign(J, std::vector<int>(2, 0));
 
+    //パスを生成
+    //パスの総数を計算 (T+J-2)!/((T-1)!(J-1)!)
+    int path_num = factorial(T + J - 2) / (factorial(T - 1) * factorial(J - 1));
+    trans_path.assign(path_num, 0);
+
+    //各パスの確率を格納する配列を動的確保
+    prob_buff.assign(path_num, 0.0);
+
+    int path = 0;
+    //確率の合計を初期化
+    prob_sum = 0;
+    for (int x = 0; path != (path_num - 1); x++)
+    {
+        int count = 0;
+
+        //(pattern.size - 1) bit 分見る
+        for (int b = 0; b < pattern.size() - 1; b++)
+        {
+            //b+1 bit目が1だったらcount++
+            if (x & (1 << b))
+                count++;
+        }
+        if (count == J - 1)
+        { //xのbitの1の数が(J-1)になったらパスを保存してi++
+            trans_path[path] = x;
+
+            //見つけたパスの確率とボールの数を
+            int t = 0;
+            int j = 0;
+            prob_buff[path] = urn[0].ball[pattern[0]];
+            for (int b = 0; pattern.size() - 1; b++)
+            {
+                if (x & (1 << b))
+                { //次のツボに遷移する場合
+                    prob_buff[path] *= urn[j].trans * urn[++j].ball[pattern[b]];
+                }
+                else
+                { //自己ループの場合
+                    prob_buff[path] *= urn[j].loop * urn[j].ball[pattern[b]];
+                }
+            }
+            prob_buff[path] *= urn[J].trans;
+            prob_sum += prob_buff[path];
+            path++;
+        }
+    }
+
+    /*
     //Viterbiアルゴリズムで終端までの確率を求める
     for (int t = 0; t < T; t++)
     {
@@ -232,5 +277,11 @@ double HMM_urn_ball::HMMMeasure(std::vector<int> pattern)
             J--;
         }
     }
-    return prob;
+    */
+    return prob_sum;
+}
+
+int HMM_urn_ball::factorial(int x)
+{ //xの階乗を返す関数
+    return x <= 1 ? 1 : x * factorial(x - 1);
 }

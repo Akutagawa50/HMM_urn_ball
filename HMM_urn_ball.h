@@ -46,15 +46,19 @@ public:
     double HMMMeasure(std::vector<int>);                                                   //評価を行う関数
 
 private:
-    std::vector<Urn> urn;                       //ツボとボール
-    std::vector<std::vector<int>> ball_count;   //出てきたボールの種類をツボごとに分けて格納
-    std::vector<std::vector<int>> trans_count;  //遷移回数をカウント 遷移trans_count[j][0] 自己ループtrans_count[j][1]
-    std::vector<int> learn_pattern;             //学習するパターンを格納
-    std::vector<std::vector<double>> prob_buff; //トレリスの各マスの確率を格納
-    std::vector<std::vector<bool>> trans_buff;  //遷移方向を格納
+    int factorial(int x);                                  //xの階乗を返す関数
+    std::vector<Urn> urn;                                  //ツボとボール
+    std::vector<std::vector<std::vector<int>>> ball_count; //出てきたボールの種類をツボごとに分けて格納
+    std::vector<std::vector<int>> trans_count;             //いらない　遷移回数をカウント 遷移trans_count[j][0] 自己ループtrans_count[j][1]
+    //std::vector<int> learn_pattern;                        //学習するパターンを格納
+    std::vector<double> prob_buff;                         //いらない　トレリスの各マスの確率を格納
+    std::vector<std::vector<bool>> trans_buff;             //いらない　遷移方向を格納
+    std::vector<int> trans_path;                           //遷移方向を格納
+
     //std::vector<std::vector<int>> times_event; //ボールの出た回数や遷移した回数を保存
     int urn_num;  //ツボの数
     int ball_num; //ボールの種類
+    double prob_sum;
 };
 
 #endif
