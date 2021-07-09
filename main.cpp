@@ -12,21 +12,27 @@ int main()
     std::vector<int> pattern = {0, 1, 1, 1};
     std::random_device rnd;
 
+    //パターンを表示
+    std::cout << "pattern: ";
     for (int i = 0; i < pattern.size(); i++)
     {
         //pattern[i] = rnd() % ball_num;
-        std::cout << pattern[i] << ", ";
+        std::cout << pattern[i] << ((i == pattern.size() - 1) ? "\n" : ", ");
     }
-    std::cout << std::endl;
 
+    //パターンの確率を表示
     std::cout << "p=" << hmm.HMMMeasure(pattern) << std::endl;
-    
-    if (hmm.HMMLearning(pattern,2))
+
+    //学習開始
+    if (hmm.HMMLearning(pattern, 2))
+    { //結果を出力
         std::cout << std::endl
                   << "prob is " << hmm.HMMMeasure(pattern) << std::endl;
-    else
+    }
+    else //解析失敗
         std::cout << "error" << std::endl;
-    
+
+    //各壺のボールが出る確率を出力
     std::vector<std::vector<double>> ball = hmm.GetBallMatrix();
     for (int i = 0; i < hmm.GetUrnNum(); i++)
     {

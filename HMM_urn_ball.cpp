@@ -94,22 +94,31 @@ bool HMM_urn_ball::HMMLearning(std::vector<int> pattern, int calc_max, double er
             for (int j = 0; j < urn_num; j++)
             {
                 //ボールのでる確率を計算
-                int ball_sum = std::accumulate(ball_count[path][j].begin(), ball_count[path][j].end(), 0.0);
+                int ball_sum = std::accumulate(ball_count[path][j].begin(), ball_count[path][j].end(), 0);
+                //ボールの総数が0だったら1にする
+                ball_sum = (ball_sum == 0) ? 1 : ball_sum;
+
+                //DEBUG "ball_sum: " << ball_sum ENDL;
                 for (int b = 0; b < ball_num; b++)
                 {
-                    ball_prob[path][j][b] = (double)ball_count[path][j][b] / ball_sum;
+                    ball_prob[path][j][b] = (double)(ball_count[path][j][b] / ball_sum);
+                    DEBUG "prob: " << ball_prob[path][j][b]
+                                   << ", count: " << ball_count[path][j][b]
+                                   << ", sum: " << ball_sum ENDL;
                 }
 
                 //遷移確率を計算
-                int trans_sum = trans_count[path][j][0] + trans_count[path][j][0];
-                trans_prob[path][j][0] = trans_count[path][j][0] / trans_sum;
-                trans_prob[path][j][1] = trans_count[path][j][1] / trans_sum;
+                int trans_sum = trans_count[path][j][0] + trans_count[path][j][1];
+                trans_prob[path][j][0] = (double)trans_count[path][j][0] / trans_sum;
+                trans_prob[path][j][1] = (double)trans_count[path][j][1] / trans_sum;
+                //DEBUG "trans_prob: " << trans_prob[path][j][1] << ", loop_prob: " << trans_prob[path][j][0] ENDL;
             }
         }
 
         //壺ごとのパラメータを統合
         for (int j = 0; j < urn_num; j++)
         {
+            //DEBUG "for J start" ENDL;
             for (int b = 0; b < ball_num; b++)
             {
                 //最終的なボールが出る確率を格納
@@ -144,6 +153,7 @@ bool HMM_urn_ball::HMMLearning(std::vector<int> pattern, int calc_max, double er
         {
             //ボールが出る確率を正規化
             double ball_prob_sum = std::accumulate(urn[j].ball.begin(), urn[j].ball.end(), 0.0);
+            ball_prob_sum = (ball_prob_sum == 0.0) ? 1.0 : ball_prob_sum;
             for (int b = 0; b < ball_num; b++)
             {
                 urn[j].ball[b] /= ball_prob_sum;
@@ -165,6 +175,7 @@ bool HMM_urn_ball::HMMLearning(std::vector<int> pattern, int calc_max, double er
         {
             return true;
         }
+        //DEBUG "for J end" ENDL;
     }
     return true;
 }
@@ -204,17 +215,19 @@ double HMM_urn_ball::HMMMeasure(std::vector<int> pattern)
     prob_buff.assign(path_num, 0.0);
 
     //各壺での遷移回数とループ回数を保存
-    //prob_count[path_num][J][0] : 自己ループ
-    //prob_count[path_num][J][1] : 次の壺へ遷移
+    //prob_count[path_num][J][0] : 自己ループの回数
+    //prob_count[path_num][J][1] : 次の壺へ遷移の回数
     trans_count = std::vector<std::vector<std::vector<int>>>(path_num, std::vector<std::vector<int>>(urn_num, std::vector<int>(2, 0)));
 
     //各パスで出てきたボールの数を格納 ball_count[パスの総数][壺の総数][ボールの種類]
     ball_count = std::vector<std::vector<std::vector<int>>>(path_num, std::vector<std::vector<int>>(urn_num, std::vector<int>(ball_num, 0)));
 
     int path = 0;
-    int x = 1 << pattern.size(); //Endに遷移するので最上位は1
+    unsigned int x = 1 << pattern.size(); //Endに遷移するので最上位は1
     //確率の合計を初期化
     prob_sum = 0;
+
+    //パスが全部出るまでループ
     while (path < path_num)
     {
         int count = 0;
@@ -240,7 +253,7 @@ double HMM_urn_ball::HMMMeasure(std::vector<int> pattern)
             {
                 //遷移かループかを確認
                 if (x & (1 << (b - 1)))
-                { //次の壺に遷移する場合
+                { //次の壺に遷移する場合，ついでにjをプラスする
                     trans_count[path][j][1]++;
                     prob_buff[path] *= urn[j].trans * urn[++j].ball[pattern[b]];
                 }
@@ -252,7 +265,11 @@ double HMM_urn_ball::HMMMeasure(std::vector<int> pattern)
                 //ボールをカウント
                 ball_count[path][j][pattern[b]]++;
             }
+            //最終状態に遷移
             prob_buff[path] *= urn[J - 1].trans;
+            trans_count[path][J - 1][1]++;
+
+            //計算した確率を総和に足す
             prob_sum += prob_buff[path];
             path++;
         }
