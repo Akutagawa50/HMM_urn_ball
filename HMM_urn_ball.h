@@ -1,11 +1,11 @@
 #ifndef HMM_URN_BALL
 #define HMM_URN_BALL
 
-#include <algorithm>
 #include <vector>
-#include <numeric>
-#include <random>
+#include <algorithm> //配列の要素の最大値(max_element)と最小値(min_element)を求めるのに使う
+#include <numeric>   //配列の要素の総和を求める(accumulate)のに使う
 
+//壺　各ボールの出る確率と遷移確率を格納するクラス
 class Urn
 {
 public:
@@ -22,6 +22,7 @@ private:
     int ball_kind;
 };
 
+//壺とボールのシミュレーションをHMMで扱うクラス
 class HMM_urn_ball
 {
 public:
