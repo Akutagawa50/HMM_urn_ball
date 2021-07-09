@@ -15,13 +15,19 @@ Urn::Urn()
 Urn::~Urn() {}
 
 //壺の中のボールを設定する関数
-bool Urn::SetBallKind(int kind) //ボールの種類を返す関数
+bool Urn::SetBallKind(int n)
 {
-    if (kind <= 1)
+    if (n <= 1)
         return false;
-    ball_kind = kind;
+    ball_kind = n;
     ball.assign(ball_kind, 1.0 / ball_kind);
     return true;
+}
+
+//ボールの種類を返す関数
+int Urn::GetBallKind()
+{
+    return ball_kind;
 }
 
 /*---------------HMM_urn_ball----------------*/
@@ -49,6 +55,83 @@ std::vector<std::vector<double>> HMM_urn_ball::GetBallMatrix()
         }
     }
     return ball_matrix;
+}
+
+std::vector<std::vector<double>> HMM_urn_ball::GetTransMatrix()
+{
+    std::vector<std::vector<double>> trans_matrix(urn_num, std::vector<double>(2, 0.0));
+    for (int i = 0; i < urn_num; i++)
+    {
+        trans_matrix[i][0] = urn[i].loop;
+        trans_matrix[i][1] = urn[i].trans;
+    }
+    return trans_matrix;
+}
+
+//壺の数を設定する関数
+bool HMM_urn_ball::SetUrnNum(int n)
+{
+    //nが1以下だったらエラー
+    if (n <= 1)
+        return false;
+
+    //ball_numも初期化されるので格納
+    int ball_kind = ball_num;
+
+    //壺の数を変更
+    urn = std::vector<Urn>(n);
+
+    //ボールの種類をball_numに戻す
+    for (int i = 0; i < n; i++)
+        urn[i].SetBallKind(ball_kind);
+
+    //壺とボールの数を更新
+    urn_num = n;
+    ball_num = ball_kind;
+    return true;
+}
+
+//ボールの数を設定する関数
+bool HMM_urn_ball::SetBallNum(int n)
+{
+    //ボールの数が1以下だとエラー
+    if (n <= 1)
+        return false;
+
+    //ボールの数を変更，遷移確率を初期化
+    for (int i = 0; i < urn_num; i++)
+    {
+        urn[i].SetBallKind(n);
+        urn[i].loop = 0.5;
+        urn[i].trans = 0.5;
+    }
+
+    //ボールの数を更新
+    ball_num = n;
+    return true;
+}
+
+//壺とボールの数を設定する関数
+bool HMM_urn_ball::SetUrnBallNum(int u, int b)
+{
+    //uかbが1以下だったらエラー
+    if (u <= 1 || b <= 1)
+        return false;
+
+    //ball_numも初期化されるので格納
+    int ball_kind = ball_num;
+
+    //壺の数を変更
+    urn = std::vector<Urn>(u);
+
+    //ボールの種類をball_numに戻す
+    for (int i = 0; i < u; i++)
+        urn[i].SetBallKind(b);
+
+    //壺とボールの数を更新
+    urn_num = u;
+    ball_num = b;
+    return true;
 }
 
 //壺の数を返す関数
