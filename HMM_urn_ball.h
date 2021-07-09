@@ -39,11 +39,11 @@ class HMM_urn_ball
 public:
     HMM_urn_ball(int urn_n, int ball_n);
     ~HMM_urn_ball();
-    std::vector<std::vector<double>> GetBallMatrix();
-    int GetUrnNum();                                                                       //壺の数を返す
-    int GetBallNum();                                                                      //ボールの種類を返す
-    bool HMMLearning(std::vector<int> pattern, int cl_max = 100, double err = 0.00000001); //学習する関数
-    double HMMMeasure(std::vector<int>);                                                   //評価を行う関数
+    std::vector<std::vector<double>> GetBallMatrix();                                   //ボールの出現確率を配列化して返す
+    int GetUrnNum();                                                                    //壺の数を返す
+    int GetBallNum();                                                                   //ボールの種類を返す
+    bool HMMLearning(std::vector<int> data, int cl_max = 100, double err = 0.00000001); //学習する関数 (data：学習するデータ(int型vector), cl_max：最大計算回数(int型)，error：収束判定の誤差(double型))
+    double HMMMeasure(std::vector<int> data);                                           //データの評価を行う関数(data：評価するデータ(int型vector))
 
 private:
     int factorial(int x);                                   //xの階乗を返す関数
@@ -52,9 +52,8 @@ private:
     std::vector<std::vector<std::vector<int>>> trans_count; //遷移回数を保存
     std::vector<int> trans_buff;                            //遷移方向を格納
     std::vector<double> prob_buff;                          //各パスの確率を格納する
-    std::vector<int> learn_pattern;                         //学習するパターンを格納
+    std::vector<int> learn_data;                            //学習するデータを格納
 
-    //std::vector<std::vector<int>> times_event; //ボールの出た回数や遷移した回数を保存
     int urn_num;  //壺の数
     int ball_num; //ボールの種類
     int path_num; //パスの総数

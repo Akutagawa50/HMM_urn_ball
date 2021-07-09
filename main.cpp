@@ -24,7 +24,7 @@ int main()
     std::cout << "p=" << hmm.HMMMeasure(pattern) << std::endl;
 
     //学習開始
-    if (hmm.HMMLearning(pattern, 2))
+    if (hmm.HMMLearning(pattern, 10))
     { //結果を出力
         std::cout << std::endl
                   << "prob is " << hmm.HMMMeasure(pattern) << std::endl;
