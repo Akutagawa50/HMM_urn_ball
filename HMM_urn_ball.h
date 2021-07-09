@@ -1,18 +1,6 @@
 #ifndef HMM_URN_BALL
 #define HMM_URN_BALL
 
-//--------debug----------//
-#define _DEBUG_
-
-#ifdef _DEBUG_
-
-#include <iostream>
-#define DEBUG std::cout << "DEBUG " <<
-#define ENDL << std::endl
-
-#endif //DEBUG
-//--------debug----------//
-
 #include <algorithm>
 #include <vector>
 #include <numeric>
