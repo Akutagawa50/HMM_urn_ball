@@ -11,15 +11,15 @@ HMM_urn_ball hmm(urn_num, ball_num);
 
 int main()
 {
+    //データの数を壺の数より4多くする
     std::vector<int> pattern(urn_num + 4);
-    //std::vector<int> pattern = {0, 1, 1, 1, 0, 1, 0, 1};
     std::random_device rnd;
 
     //データを表示
     std::cout << "pattern: ";
     for (int i = 0; i < pattern.size(); i++)
     {
-        pattern[i] = rnd() % ball_num;
+        pattern[i] = rnd() % ball_num;//0~(ball_num-1)のランダムな値を代入
         std::cout << pattern[i] << ((i == pattern.size() - 1) ? "\n" : ", ");
     }
 
