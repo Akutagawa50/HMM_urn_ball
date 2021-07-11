@@ -152,12 +152,10 @@ bool HMM_urn_ball::HMMLearning(std::vector<int> data, int calc_max, double error
     double prob = 0.0;     //計算結果を格納
     double pre_prob = 1.0; //前の計算結果を格納
 
-    learn_data = data; //データを保存
-
-    prob = HMMMeasure(learn_data);
+    prob = HMMMeasure(data);
 
     //dataが条件に合わなかったらエラーを返す
-    if (prob == -1.0)
+    if (prob <= 0.0)
         return false;
 
     //パラメータ更新
@@ -180,7 +178,7 @@ bool HMM_urn_ball::HMMLearning(std::vector<int> data, int calc_max, double error
 
                 //ボールの総数を計算
                 int ball_sum = std::accumulate(ball_count[path][j].begin(), ball_count[path][j].end(), 0);
-
+                ball_sum = ball_sum == 0 ? 1 : ball_sum;
                 for (int b = 0; b < ball_num; b++)
                 {
                     ball_prob[path][j][b] = (double)ball_count[path][j][b] / ball_sum;
@@ -204,6 +202,7 @@ bool HMM_urn_ball::HMMLearning(std::vector<int> data, int calc_max, double error
                 for (int path = 0; path < path_num; path++)
                 {
                     ball_para += ball_prob[path][j][b] * prob_buff[path];
+                    //std:: << "ball para is " << ball_para << std::endl;
                 }
                 //ボールのパラメータを更新
                 urn[j].ball[b] = ball_para;
@@ -230,6 +229,7 @@ bool HMM_urn_ball::HMMLearning(std::vector<int> data, int calc_max, double error
         {
             //ボールが出る確率を正規化
             double ball_prob_sum = std::accumulate(urn[j].ball.begin(), urn[j].ball.end(), 0.0);
+            ball_prob_sum = ball_prob_sum == 0.0 ? 1.0 : ball_prob_sum;
             for (int b = 0; b < ball_num; b++)
             {
                 urn[j].ball[b] /= ball_prob_sum;
@@ -243,7 +243,7 @@ bool HMM_urn_ball::HMMLearning(std::vector<int> data, int calc_max, double error
 
         //評価
         pre_prob = prob;
-        prob = HMMMeasure(learn_data);
+        prob = HMMMeasure(data);
 
         //収束判定
         double def_prob = prob - pre_prob;
@@ -298,7 +298,7 @@ double HMM_urn_ball::HMMMeasure(std::vector<int> data)
     ball_count = std::vector<std::vector<std::vector<int>>>(path_num, std::vector<std::vector<int>>(urn_num, std::vector<int>(ball_num, 0)));
 
     int path = 0;
-    unsigned int x = 1 << data.size(); //Endに遷移するので最上位は1
+    int x = 1 << data.size(); //Endに遷移するので最上位は1
     //確率の合計を初期化
     prob_sum = 0;
 
@@ -320,7 +320,7 @@ double HMM_urn_ball::HMMMeasure(std::vector<int> data)
 
             int t = 0;
             int j = 0;
-
+            double p;
             //最初のボールの確率を格納
             prob_buff[path] = urn[0].ball[data[0]];
             //出てきたボールをカウント
@@ -332,16 +332,19 @@ double HMM_urn_ball::HMMMeasure(std::vector<int> data)
                 if (x & (1 << (b - 1)))
                 { //次の壺に遷移する場合，ついでにjをプラスする
                     trans_count[path][j][1]++;
-                    prob_buff[path] *= urn[j].trans * urn[++j].ball[data[b]];
+                    p = urn[j].trans * urn[++j].ball[data[b]];
+                    prob_buff[path] *= p;
                 }
                 else
                 { //自己ループの場合
                     trans_count[path][j][0]++;
-                    prob_buff[path] *= urn[j].loop * urn[j].ball[data[b]];
+                    p = urn[j].loop * urn[j].ball[data[b]];
+                    prob_buff[path] *= p;
                 }
                 //ボールをカウント
                 ball_count[path][j][data[b]]++;
             }
+
             //最終状態に遷移
             prob_buff[path] *= urn[J - 1].trans;
             trans_count[path][J - 1][1]++;

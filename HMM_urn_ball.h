@@ -37,7 +37,7 @@ public:
     int GetBallNum();                                  //ボールの種類を返す
     bool HMMLearning(std::vector<int> data,
                      int cl_max = 100,
-                     double err = 0.00000001); //学習する関数 (data：学習するデータ(int型vector), cl_max：最大計算回数(int型)，error：収束判定の誤差(double型))
+                     double err = 0.001); //学習する関数 (data：学習するデータ(int型vector), cl_max：最大計算回数(int型)，error：収束判定の誤差(double型))
     double HMMMeasure(std::vector<int> data);  //データの評価を行う関数(data：評価するデータ(int型vector))
 
 private:
